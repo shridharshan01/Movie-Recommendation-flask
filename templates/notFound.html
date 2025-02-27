@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Movie Not Found</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,500&display=swap">
+    <style>
+        :root {
+            --primary-color: #2563eb; /* Modern blue */
+            --error-color: #dc2626; /* Red for error messages */
+            --background-color: linear-gradient(to right, #e0f7fa, #80deea); /* Light gradient background */
+            --text-color: #1e293b; /* Dark gray text */
+            --button-hover-color: #1d4ed8; /* Darker blue for hover */
+            --suggestion-bg: #e9ecef; /* Light gray for suggestions */
+            --suggestion-hover-bg: #d3d3d3; /* Gray for hover */
+        }
+
+        body {
+            font-family: "Poppins", sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--error-color);
+            font-size: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        #suggestions {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--button-hover-color);
+            transform: scale(1.05);
+        }
+
+        .suggestion {
+            background: var(--suggestion-bg);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .suggestion:hover {
+            background: var(--suggestion-hover-bg);
+            transform: translateX(5px);
+        }
+
+        .suggestion span {
+            font-weight: bold;
+        }
+
+        .suggestion span:last-child {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Error: Movie "{{ name }}" Not Found</h1>
+        <input type="hidden" value="{{ name }}" id="movie_name" readonly />
+        <hr>
+        <div id="suggestions"></div>
+        <button onClick="goBack()">Go Back to Home Page & Try Again</button>
+    </div>
+
+    <script>
+        let all_titles = [
+            'Avatar', "Pirates of the Caribbean: At World's End", 'Spectre',
+            'The Dark Knight Rises', 'John Carter', 'Spider-Man 3',
+            'Tangled', 'Avengers: Age of Ultron', 'Harry Potter and the Half-Blood Prince',
+            'Batman v Superman: Dawn of Justice', 'Superman Returns',
+            'Christmas with the Kranks', 'Cirque du Freak: The Vampire\'s Assistant',
+            'Cries and Whispers', 'Arthur and the Invisibles', 'Chasing Mavericks',
+            'The Amazing Spider-Man', 'The Hunger Games', 'Inception',
+            'Guardians of the Galaxy', 'The Matrix', 'Titanic', 'Jurassic Park',
+            'Finding Nemo', 'The Lion King', 'Frozen', 'The Shawshank Redemption'
+        ];
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function checkSimilarity() {
+            let filtered_names = [];
+            var input = document.getElementById("movie_name").value;
+
+            for (var i = 0; i < all_titles.length; i++) {
+                let simscore = similarity(input, all_titles[i]);
+                if (simscore >= 0.5) { // Lowered threshold to show more recommendations
+                    filtered_names.push({ title: all_titles[i], score: simscore });
+                }
+            }
+
+            filtered_names.sort((a, b) => b.score - a.score);
+
+            if (filtered_names.length < 1) {
+                document.getElementById("suggestions").innerHTML = "The entered movie name is either misspelled badly or not recorded in the database.";
+            } else {
+                let suggestionsHTML = "<strong>Did you mean:</strong><br/>";
+                filtered_names.forEach(item => {
+                    suggestionsHTML += `<div class="suggestion"><span>${item.title}</span><span>Score: ${item.score.toFixed(2)}</span></div>`;
+                });
+                document.getElementById("suggestions").innerHTML = suggestionsHTML;
+            }
+        }
+
+        function similarity(input, recc) {
+            const termfreqInput = termFreqMap(input);
+            const termfreqRecc = termFreqMap(recc);
+            let dict = {};
+            addLettersToDict(termfreqInput, dict);
+            addLettersToDict(termfreqRecc, dict);
+            const inputVector = vectorizeTermFreqMap(termfreqInput, dict);
+            const reccVector = vectorizeTermFreqMap(termfreqRecc, dict);
+            return dotProduct(inputVector, reccVector) / (magnitude(inputVector) * magnitude(reccVector));
+        }
+
+        function termFreqMap(str) {
+            var chars = str.split('');
+            var termFreq = {};
+            chars.forEach(function (w) {
+                termFreq[w] = (termFreq[w] || 0) + 1;
+            });
+            return termFreq;
+        }
+
+        function addLettersToDict(map, dict) {
+            for (var key in map) {
+                dict[key] = true;
+            }
+        }
+
+        function vectorizeTermFreqMap(map, dict) {
+            var termFreqVector = [];
+            for (var term in dict) {
+                termFreqVector.push(map[term] || 0);
+            }
+            return termFreqVector;
+        }
+
+        function dotProduct(vecA, vecB) {
+            var product = 0;
+            for (var i = 0; i < vecA.length; i++) {
+                product += vecA[i] * vecB[i];
+            }
+            return product;
+        }
+
+        function magnitude(vec) {
+            var sum = 0;
+            for (var i = 0; i < vec.length; i++) {
+                sum += vec[i] * vec[i];
+            }
+            return Math.sqrt(sum);
+        }
+
+        // Call the main function to check for similarity
+        checkSimilarity();
+    </script>
+</body>
+</html>

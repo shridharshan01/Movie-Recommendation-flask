@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recommendations for {{ search_name }}</title>
+  <!-- Tailwind CSS for modern UI -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+  <style>
+    /* Custom styles for modern UI */
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #e0f7fa; /* Updated background color to a light cyan */
+    }
+    .movie-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .movie-table th, .movie-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .movie-table th {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .movie-table tr:hover {
+      background-color: #f3f4f6;
+    }
+    .movie-table a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .movie-table a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mx-auto p-6">
+    <!-- Back Button -->
+    <button onclick="window.history.back()" class="bg-blue-500 text-white px-4 py-2 rounded-lg mb-6 hover:bg-blue-600 transition duration-300">
+      Back to Home Page
+    </button>
+
+    <!-- Title -->
+    <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">
+      Movie Recommendations for "{{ search_name }}"
+    </h2>
+
+    <!-- Movie Table -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+      <table class="movie-table w-full" id="movieTable">
+        <thead>
+          <tr>
+            <th>Movie Title</th>
+            <th>Release Date</th>
+            <th>Similarity Score</th>
+          </tr>
+        </thead>
+        <tbody class="table_body">
+          <!-- Dynamic Rows -->
+          <tr>
+            <td><a href="{{ movie_homepage[0] }}" target="_blank">{{ movie_names[0] }}</a></td>
+            <td>{{ movie_releaseDate[0] }}</td>
+            <td>{{ movie_simScore[0][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[1] }}" target="_blank">{{ movie_names[1] }}</a></td>
+            <td>{{ movie_releaseDate[1] }}</td>
+            <td>{{ movie_simScore[1][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[2] }}" target="_blank">{{ movie_names[2] }}</a></td>
+            <td>{{ movie_releaseDate[2] }}</td>
+            <td>{{ movie_simScore[2][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[3] }}" target="_blank">{{ movie_names[3] }}</a></td>
+            <td>{{ movie_releaseDate[3] }}</td>
+            <td>{{ movie_simScore[3][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[4] }}" target="_blank">{{ movie_names[4] }}</a></td>
+            <td>{{ movie_releaseDate[4] }}</td>
+            <td>{{ movie_simScore[4][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[5] }}" target="_blank">{{ movie_names[5] }}</a></td>
+            <td>{{ movie_releaseDate[5] }}</td>
+            <td>{{ movie_simScore[5][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[6] }}" target="_blank">{{ movie_names[6] }}</a></td>
+            <td>{{ movie_releaseDate[6] }}</td>
+            <td>{{ movie_simScore[6][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[7] }}" target="_blank">{{ movie_names[7] }}</a></td>
+            <td>{{ movie_releaseDate[7] }}</td>
+            <td>{{ movie_simScore[7][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[8] }}" target="_blank">{{ movie_names[8] }}</a></td>
+            <td>{{ movie_releaseDate[8] }}</td>
+            <td>{{ movie_simScore[8][1] }}</td>
+          </tr>
+          <tr>
+            <td><a href="{{ movie_homepage[9] }}" target="_blank">{{ movie_names[9] }}</a></td>
+            <td>{{ movie_releaseDate[9] }}</td>
+            <td>{{ movie_simScore[9][1] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="flex justify-center gap-4 mt-6">
+      <button id="exportPdf" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+        Export as PDF
+      </button>
+      <button id="exportExcel" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition duration-300">
+        Export as Excel
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Function to export the table as PDF
+    function exportToPdf() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Set up the table headers
+      const headers = [
+        "Movie Title",
+        "Release Date",
+        "Similarity Score"
+      ];
+
+      // Extract data from the movie table
+      const rows = [];
+      document.querySelectorAll('.movie-table tbody tr').forEach(row => {
+        const movieName = row.querySelector('td:nth-child(1)').textContent;
+        const releaseDate = row.querySelector('td:nth-child(2)').textContent;
+        const similarityScore = row.querySelector('td:nth-child(3)').textContent;
+        rows.push([movieName, releaseDate, similarityScore]);
+      });
+
+      // Add the table to the PDF
+      doc.autoTable({
+        head: [headers],
+        body: rows,
+        startY: 20, // Start below the title
+        theme: 'grid', // Add grid lines
+        styles: { fontSize: 10 }, // Adjust font size
+        columnStyles: {
+          0: { cellWidth: 80 }, // Movie Title
+          1: { cellWidth: 50 }, // Release Date
+          2: { cellWidth: 50 } // Similarity Score
+        }
+      });
+
+      // Add a title to the PDF
+      doc.setFontSize(16);
+      doc.text("Movie Recommendations for '{{ search_name }}'", 14, 15);
+
+      // Save the PDF
+      doc.save('movie_recommendations.pdf');
+    }
+
+    // Function to export the table as Excel
+    function exportToExcel() {
+      const table = document.getElementById('movieTable');
+      const workbook = XLSX.utils.table_to_book(table, { sheet: "Movie Recommendations" });
+      XLSX.writeFile(workbook, 'movie_recommendations.xlsx');
+    }
+
+    // Attach the functions to the button click events
+    document.getElementById('exportPdf').addEventListener('click', exportToPdf);
+    document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+  </script>
+</body>
+</html>
